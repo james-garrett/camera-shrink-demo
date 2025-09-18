@@ -1,0 +1,86 @@
+[gd_scene load_steps=10 format=3 uid="uid://dk02rm1jcir6t"]
+
+[ext_resource type="Script" uid="uid://c2kdixaoxfov6" path="res://FPSCounter.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://bsguup0m8xqxp" path="res://player/Player.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://c7isdpd8ykjep" path="res://environment/Wall.tscn" id="4"]
+[ext_resource type="PackedScene" uid="uid://cnhrhyfu1hs1t" path="res://environment/box.tscn" id="4_nrt7m"]
+[ext_resource type="PackedScene" uid="uid://bhw2o0powjnsp" path="res://environment/Floor.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://dl8xj04oxmnsb" path="res://environment/Ball.tscn" id="6"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_y252g"]
+
+[sub_resource type="Sky" id="8"]
+sky_material = SubResource("ProceduralSkyMaterial_y252g")
+
+[sub_resource type="Environment" id="7"]
+background_mode = 2
+sky = SubResource("8")
+ssao_intensity = 4.0
+
+[node name="Node3D" type="Node3D"]
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="."]
+offset_right = 1980.0
+offset_bottom = 1080.0
+scale = Vector2(0.604719, 0.642857)
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportContainer"]
+handle_input_locally = false
+size = Vector2i(1980, 1080)
+render_target_update_mode = 4
+
+[node name="ProxyCamera" type="Camera3D" parent="SubViewportContainer/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.491182, 0.15522)
+current = true
+fov = 50.0
+far = 200.0
+
+[node name="FPSCounter" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 14.0
+text = "FPS: 0"
+script = ExtResource("1")
+
+[node name="Help" type="Label" parent="."]
+offset_top = 20.0
+offset_right = 106.0
+offset_bottom = 38.0
+text = "E = Flashlight
+WASD = Move"
+
+[node name="Floor" parent="." instance=ExtResource("5")]
+transform = Transform3D(64, 0, 0, 0, 1, 0, 0, 0, 64, -0.00746965, -2, 0)
+
+[node name="Ball1" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
+
+[node name="Ball2" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -3)
+
+[node name="Ball3" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -3)
+
+[node name="Box" parent="." instance=ExtResource("4_nrt7m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 1.44723)
+
+[node name="Box2" parent="." instance=ExtResource("4_nrt7m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.31321, 0, 4.10103)
+
+[node name="Box3" parent="." instance=ExtResource("4_nrt7m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.47623, 0, -2.78186)
+
+[node name="Wall" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.665272, -8.1876)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("7")
+
+[node name="Sun" type="DirectionalLight3D" parent="WorldEnvironment"]
+transform = Transform3D(-0.5, -0.296198, 0.813798, 0, 0.939693, 0.34202, -0.866025, 0.17101, -0.469847, 0, 0, 0)
+layers = 262144
+light_color = Color(0.94902, 0.580392, 0.247059, 1)
+light_cull_mask = 4294443007
+shadow_enabled = true
+
+[node name="Player" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)

@@ -1,0 +1,428 @@
+[gd_scene load_steps=18 format=3 uid="uid://dk02rm1jcir6t"]
+
+[ext_resource type="Script" uid="uid://c2kdixaoxfov6" path="res://FPSCounter.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://bsguup0m8xqxp" path="res://player/Player.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://c7isdpd8ykjep" path="res://environment/Wall.tscn" id="4"]
+[ext_resource type="PackedScene" uid="uid://cnhrhyfu1hs1t" path="res://environment/box.tscn" id="4_nrt7m"]
+[ext_resource type="PackedScene" uid="uid://bhw2o0powjnsp" path="res://environment/Floor.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://dl8xj04oxmnsb" path="res://environment/Ball.tscn" id="6"]
+[ext_resource type="Script" uid="uid://xvovvw1qg35r" path="res://scripts/hud_controller.gd" id="6_uqj48"]
+[ext_resource type="Texture2D" uid="uid://1h5eusw70pvo" path="res://tiny_texture.png" id="7_6mupk"]
+[ext_resource type="Theme" uid="uid://d3xpj2jcaq3xd" path="res://Assets/Themes/godot-theme-browser-main-project-themes/project/themes/purpixeled/theme.tres" id="7_jweps"]
+[ext_resource type="Texture2D" uid="uid://cjtoykghduonl" path="res://yellow_tiny_texture.png" id="8_6mupk"]
+[ext_resource type="Texture2D" uid="uid://527jbaxotay5" path="res://Assets/Simple_Black_Transparent_Border.png" id="10_ab3xd"]
+[ext_resource type="Script" uid="uid://noy65fkwbmt5" path="res://scripts/basic_logger.gd" id="11_uqj48"]
+[ext_resource type="Script" uid="uid://vutw1j8fapgv" path="res://scripts/texture_rect_game_display.gd" id="13_dedhk"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uqj48"]
+bg_color = Color(0.329158, 0.329158, 0.329158, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.497474, 0.497474, 0.497473, 1)
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_y252g"]
+
+[sub_resource type="Sky" id="8"]
+sky_material = SubResource("ProceduralSkyMaterial_y252g")
+
+[sub_resource type="Environment" id="7"]
+background_mode = 2
+sky = SubResource("8")
+ssao_intensity = 4.0
+
+[node name="MainScene" type="Node3D"]
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -990.0
+offset_top = -540.0
+offset_right = 990.0
+offset_bottom = 540.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.999892, 0.99994)
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportContainer"]
+handle_input_locally = false
+size = Vector2i(1980, 1080)
+render_target_update_mode = 4
+
+[node name="ProxyCamera" type="Camera3D" parent="SubViewportContainer/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.491182, 0.15522)
+current = true
+fov = 50.0
+near = 0.005
+far = 200.0
+
+[node name="Floor" parent="." instance=ExtResource("5")]
+transform = Transform3D(64, 0, 0, 0, 1, 0, 0, 0, 64, -0.00746965, -2, 0)
+
+[node name="Ball1" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
+
+[node name="Ball2" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -3)
+
+[node name="Ball3" parent="." instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -3)
+
+[node name="Box" parent="." instance=ExtResource("4_nrt7m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 1.44723)
+
+[node name="Box2" parent="." instance=ExtResource("4_nrt7m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.31321, 0, 4.10103)
+
+[node name="Box3" parent="." instance=ExtResource("4_nrt7m")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.47623, 0, -2.78186)
+
+[node name="Wall" parent="." instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.665272, -8.1876)
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("6_uqj48")
+
+[node name="HUD" type="CanvasLayer" parent="UI"]
+
+[node name="Label" type="Label" parent="UI/HUD"]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="FPSCounter" type="Label" parent="UI/HUD"]
+offset_right = 45.0
+offset_bottom = 23.0
+text = "FPS: 0"
+script = ExtResource("1")
+
+[node name="Help" type="Label" parent="UI/HUD"]
+offset_top = 20.0
+offset_right = 107.0
+offset_bottom = 69.0
+text = "E = Flashlight
+WASD = Move"
+
+[node name="BottomPanel" type="PanelContainer" parent="UI/HUD"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -200.0
+grow_horizontal = 2
+grow_vertical = 0
+theme = ExtResource("7_jweps")
+
+[node name="InterfaceContainer" type="HBoxContainer" parent="UI/HUD/BottomPanel"]
+layout_mode = 2
+theme = ExtResource("7_jweps")
+
+[node name="EnergyPanel" type="VBoxContainer" parent="UI/HUD/BottomPanel/InterfaceContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("7_jweps")
+
+[node name="EnergyLabel" type="Label" parent="UI/HUD/BottomPanel/InterfaceContainer/EnergyPanel"]
+layout_mode = 2
+text = "Energy"
+horizontal_alignment = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="UI/HUD/BottomPanel/InterfaceContainer/EnergyPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="EnergyBar" type="TextureProgressBar" parent="UI/HUD/BottomPanel/InterfaceContainer/EnergyPanel/CenterContainer"]
+custom_minimum_size = Vector2(200, 24)
+layout_mode = 2
+theme = ExtResource("7_jweps")
+value = 20.0
+nine_patch_stretch = true
+texture_under = ExtResource("7_6mupk")
+texture_progress = ExtResource("8_6mupk")
+tint_under = Color(0, 0, 0, 1)
+tint_over = Color(0.318725, 0.500747, 1, 1)
+
+[node name="HealthPanel" type="VBoxContainer" parent="UI/HUD/BottomPanel/InterfaceContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("7_jweps")
+
+[node name="HealthLabel" type="Label" parent="UI/HUD/BottomPanel/InterfaceContainer/HealthPanel"]
+layout_mode = 2
+text = "Health"
+horizontal_alignment = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="UI/HUD/BottomPanel/InterfaceContainer/HealthPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="EnergyBar" type="TextureProgressBar" parent="UI/HUD/BottomPanel/InterfaceContainer/HealthPanel/CenterContainer"]
+custom_minimum_size = Vector2(200, 24)
+layout_mode = 2
+value = 70.0
+nine_patch_stretch = true
+texture_under = ExtResource("7_6mupk")
+texture_progress = ExtResource("7_6mupk")
+tint_under = Color(0, 0, 0, 1)
+tint_over = Color(0.318725, 0.500747, 1, 1)
+
+[node name="AmmoPanel" type="VBoxContainer" parent="UI/HUD/BottomPanel/InterfaceContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("7_jweps")
+
+[node name="AmmoLabel" type="Label" parent="UI/HUD/BottomPanel/InterfaceContainer/AmmoPanel"]
+layout_mode = 2
+text = "Ammo"
+horizontal_alignment = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="UI/HUD/BottomPanel/InterfaceContainer/AmmoPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="AmmoCounter" type="RichTextLabel" parent="UI/HUD/BottomPanel/InterfaceContainer/AmmoPanel/CenterContainer"]
+layout_mode = 2
+text = "100"
+
+[node name="AmmoCounterThatWorks" type="Label" parent="UI/HUD/BottomPanel/InterfaceContainer/AmmoPanel/CenterContainer"]
+layout_mode = 2
+text = "100"
+horizontal_alignment = 1
+
+[node name="InventoryPanel" type="ItemList" parent="UI/HUD/BottomPanel/InterfaceContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("7_jweps")
+
+[node name="InventoryLabel" type="Label" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -37.5
+offset_right = 37.5
+offset_bottom = 23.0
+grow_horizontal = 2
+theme = ExtResource("7_jweps")
+text = "Inventory"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+theme = ExtResource("7_jweps")
+
+[node name="GridContainer" type="GridContainer" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel/CenterContainer"]
+layout_mode = 2
+theme = ExtResource("7_jweps")
+columns = 4
+
+[node name="NinePatchRect2" type="NinePatchRect" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel/CenterContainer/GridContainer"]
+visible = false
+layout_mode = 2
+theme = ExtResource("7_jweps")
+texture = ExtResource("10_ab3xd")
+
+[node name="Panel" type="Panel" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel/CenterContainer/GridContainer"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("7_jweps")
+theme_override_styles/panel = SubResource("StyleBoxFlat_uqj48")
+
+[node name="NinePatchRect" type="NinePatchRect" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel/CenterContainer/GridContainer/Panel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("7_jweps")
+texture = ExtResource("10_ab3xd")
+
+[node name="Panel2" type="Panel" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel/CenterContainer/GridContainer"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("7_jweps")
+theme_override_styles/panel = SubResource("StyleBoxFlat_uqj48")
+
+[node name="NinePatchRect" type="NinePatchRect" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel/CenterContainer/GridContainer/Panel2"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("7_jweps")
+texture = ExtResource("10_ab3xd")
+
+[node name="Panel3" type="Panel" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel/CenterContainer/GridContainer"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("7_jweps")
+theme_override_styles/panel = SubResource("StyleBoxFlat_uqj48")
+
+[node name="NinePatchRect" type="NinePatchRect" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel/CenterContainer/GridContainer/Panel3"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("7_jweps")
+texture = ExtResource("10_ab3xd")
+
+[node name="Panel4" type="Panel" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel/CenterContainer/GridContainer"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("7_jweps")
+theme_override_styles/panel = SubResource("StyleBoxFlat_uqj48")
+
+[node name="NinePatchRect" type="NinePatchRect" parent="UI/HUD/BottomPanel/InterfaceContainer/InventoryPanel/CenterContainer/GridContainer/Panel4"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("7_jweps")
+texture = ExtResource("10_ab3xd")
+
+[node name="TabContainer" type="TabContainer" parent="UI/HUD/BottomPanel/InterfaceContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+theme = ExtResource("7_jweps")
+current_tab = 0
+
+[node name="Log" type="VBoxContainer" parent="UI/HUD/BottomPanel/InterfaceContainer/TabContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/_tab_index = 0
+
+[node name="LogLabel" type="Label" parent="UI/HUD/BottomPanel/InterfaceContainer/TabContainer/Log"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 0
+theme = ExtResource("7_jweps")
+text = "Log"
+horizontal_alignment = 1
+
+[node name="Panel3" type="Panel" parent="UI/HUD/BottomPanel/InterfaceContainer/TabContainer/Log"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("7_jweps")
+theme_override_styles/panel = SubResource("StyleBoxFlat_uqj48")
+
+[node name="TextEdit" type="TextEdit" parent="UI/HUD/BottomPanel/InterfaceContainer/TabContainer/Log/Panel3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("7_jweps")
+text = "Test Value"
+editable = false
+script = ExtResource("11_uqj48")
+
+[node name="Minimap" type="TextureRect" parent="UI/HUD/BottomPanel/InterfaceContainer/TabContainer"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("7_jweps")
+metadata/_tab_index = 1
+
+[node name="MinimapLabel" type="Label" parent="UI/HUD/BottomPanel/InterfaceContainer/TabContainer/Minimap"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -34.5
+offset_right = 34.5
+offset_bottom = 23.0
+grow_horizontal = 2
+theme = ExtResource("7_jweps")
+text = "Minimap"
+horizontal_alignment = 1
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("7")
+
+[node name="Sun" type="DirectionalLight3D" parent="WorldEnvironment"]
+transform = Transform3D(-0.5, -0.296198, 0.813798, 0, 0.939693, 0.34202, -0.866025, 0.17101, -0.469847, 0, 0, 0)
+layers = 262144
+light_color = Color(0.94902, 0.580392, 0.247059, 1)
+light_cull_mask = 4294443007
+shadow_enabled = true
+
+[node name="Player" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="CenterContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("13_dedhk")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]

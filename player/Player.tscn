@@ -1,0 +1,30 @@
+[gd_scene load_steps=6 format=3 uid="uid://bsguup0m8xqxp"]
+
+[ext_resource type="Script" uid="uid://ccoswxf8sdjfv" path="res://player/Camera.gd" id="1"]
+[ext_resource type="Script" uid="uid://bnix3gr08jshu" path="res://player/Player.gd" id="2"]
+[ext_resource type="PackedScene" uid="uid://bmkh3cq8habrl" path="res://player/flashlight/Flashlight.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://do68uqy1yvacl" path="res://player/character.gltf" id="4_akkas"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_rhw8e"]
+radius = 0.24531
+height = 1.6843
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("2")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 9.09495e-15, 0, -9.09495e-15, 1, 0, 0, 0, 1, -9.31323e-10, 1.67742, 0.13534)
+cull_mask = 524287
+fov = 50.0
+far = 200.0
+script = ExtResource("1")
+
+[node name="Flashlight" parent="Camera3D" instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0151734, 0.85985, 0.234704)
+shape = SubResource("CapsuleShape3D_rhw8e")
+
+[node name="character" parent="." instance=ExtResource("4_akkas")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
