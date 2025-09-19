@@ -34,11 +34,6 @@ func _ready():
 	# TODO - see if we can do this function with pointers or references
 	uiWindowSizesAfterUIratio = calibrateWindowSizesForAspectRatio(uiWindowSizes, defaultAspectRatio, defaultUItoGameWindowRatio)
 	
-	# TODO - delete after verifying we can calculate all ratios in dict, just use viewport.set_custom_minimum_size(uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex])
-	# var defaultAspectRatioAsFraction = calculate_ratio_as_fraction(defaultAspectRatio)
-	# var rdefaultUIRatioAsFraction = calculate_ratio_as_fraction(defaultUItoGameWindowRatio)
-	# defaultWindowSize = calculate_ratio_accurate_viewport(defaultAspectRatioAsFraction, rdefaultUIRatioAsFraction, uiWindowSizes[defaultAspectRatio][uiWindowIndex])
-	
 	defaultWindowSize = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
 
 	viewport.set_custom_minimum_size(defaultWindowSize)
@@ -79,6 +74,27 @@ func resize_ui_scroll(direction):
 			uiWindowIndex += 1
 			target_size = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
 
+
+func calculate_ratio_as_fraction(aspect_ratio_string):
+	var ratioArr = aspect_ratio_string.split(":")
+	if ratioArr[0] == null || ratioArr[1] == null:
+		push_error("invalid ratio given:" + aspect_ratio_string)
+	var fraction = ratioArr[0].to_float() / ratioArr[1].to_float() 
+	return fraction
+
+
+func calculate_ratio_accurate_viewport(aspect_ratio_as_fraction, uiRatioAsFration, viewPort_size):
+	var max_width = uiRatioAsFration * viewPort_size.x
+	var max_height = uiRatioAsFration * viewPort_size.y
+
+	var new_height = max_width / aspect_ratio_as_fraction
+	
+	if new_height > max_height:
+		return Vector2(max_height * aspect_ratio_as_fraction, max_height)
+	
+	return Vector2(max_width, new_height)
+
+
 # UI ratio is how much of the screen we want taken up by the UI
 func calibrateWindowSizesForAspectRatio(window_view_dict, aspect_ratio, uiRatio):
 	var uiRatioAsFration = calculate_ratio_as_fraction(uiRatio)
@@ -93,23 +109,15 @@ func calibrateWindowSizesForAspectRatio(window_view_dict, aspect_ratio, uiRatio)
 	newAspectRatioDict[aspect_ratio].append_array(newResolutionArray)
 	return newAspectRatioDict
 
-func calculate_ratio_as_fraction(aspect_ratio_string):
-	var ratioArr = aspect_ratio_string.split(":")
-	if ratioArr[0] == null || ratioArr[1] == null:
-		push_error("invalid ratio given:" + aspect_ratio_string)
-	var fraction = ratioArr[0].to_float() / ratioArr[1].to_float() 
-	return fraction
 
-
-
-
-func calculate_ratio_accurate_viewport(aspect_ratio_as_fraction, uiRatioAsFration, viewPort_size):
-	var max_width = uiRatioAsFration * viewPort_size.x
-	var max_height = uiRatioAsFration * viewPort_size.y
-
-	var new_height = max_width / aspect_ratio_as_fraction
+# TODO - function which calculates window sizes after UI ratio changes
+	# - the UI ratio will change when the UI reaches set intervals, the UI will change size
+	# - Possible that we'll want to have the dict evolve to have the topmost layer be the UI ratio, then a list of aspect ratios, then resolutions
+	# -- {UI_ratio: {Aspect_ratio: [resolution_Array]}}
+	# -- I think this'd be for the best.
 	
-	if new_height > max_height:
-		return Vector2(max_height * aspect_ratio_as_fraction, max_height)
 	
-	return Vector2(max_width, new_height)
+# PERFORMANCE Considerations
+# - Lerp interval can be faster
+# - Moving between resolutions on such small intervals is causing slowdown
+# - Can we lower render resolution after it reaches certain intervals?
