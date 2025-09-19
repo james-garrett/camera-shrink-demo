@@ -12,7 +12,9 @@ var resizing = false
 var uiWindowSizes = {
 	"16:9": [Vector2(1920, 1080), Vector2(1600, 900), Vector2(1366, 768), Vector2(1280, 720), Vector2(960, 540), Vector2(640, 360)]
 }
+@onready var uiWindowSizesAfterUIratio
 var defaultAspectRatio = "16:9"
+var defaultUItoGameWindowRatio = "4:5"
 var defaultWindowSize
 var uiWindowIndex = 0
 
@@ -28,16 +30,21 @@ func _ready():
 	viewport.anchor_top = 0
 	viewport.anchor_bottom = 0
 	viewport.expand = true
-	
-	#subViewportContainer.visible = false
 
-	defaultWindowSize = calculate_ratio_accurate_viewport(defaultAspectRatio, uiWindowSizes[defaultAspectRatio][uiWindowIndex])
+	# TODO - see if we can do this function with pointers or references
+	uiWindowSizesAfterUIratio = calibrateWindowSizesForAspectRatio(uiWindowSizes, defaultAspectRatio, defaultUItoGameWindowRatio)
+	
+	# TODO - delete after verifying we can calculate all ratios in dict, just use viewport.set_custom_minimum_size(uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex])
+	# var defaultAspectRatioAsFraction = calculate_ratio_as_fraction(defaultAspectRatio)
+	# var rdefaultUIRatioAsFraction = calculate_ratio_as_fraction(defaultUItoGameWindowRatio)
+	# defaultWindowSize = calculate_ratio_accurate_viewport(defaultAspectRatioAsFraction, rdefaultUIRatioAsFraction, uiWindowSizes[defaultAspectRatio][uiWindowIndex])
+	
+	defaultWindowSize = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
+
 	viewport.set_custom_minimum_size(defaultWindowSize)
-	# viewport.set_custom_minimum_size(defaultWindowSize)
 	viewport.stretch_mode = TextureRect.STRETCH_SCALE
 	
 	await get_tree().process_frame
-	#subViewportContainer.visible = false
 	
 
 func _input(event):
@@ -65,14 +72,28 @@ func resize_ui_scroll(direction):
 		if uiWindowIndex > 0:
 			resizing = true
 			uiWindowIndex -= 1
-			target_size = uiWindowSizes[defaultAspectRatio][uiWindowIndex]
+			target_size = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
 	elif direction == -1:
-		if uiWindowIndex < uiWindowSizes[defaultAspectRatio].size() -1:
+		if uiWindowIndex < uiWindowSizesAfterUIratio[defaultAspectRatio].size() -1:
 			resizing = true
 			uiWindowIndex += 1
-			target_size = uiWindowSizes[defaultAspectRatio][uiWindowIndex]
+			target_size = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
 
-func calculate_aspect_ratio_as_fraction(aspect_ratio_string):
+# UI ratio is how much of the screen we want taken up by the UI
+func calibrateWindowSizesForAspectRatio(window_view_dict, aspect_ratio, uiRatio):
+	var uiRatioAsFration = calculate_ratio_as_fraction(uiRatio)
+	var aspectRatioAsFraction = calculate_ratio_as_fraction(aspect_ratio)
+	var newAspectRatioDict = {}
+	newAspectRatioDict[aspect_ratio] = []
+	var newResolutionArray = []
+	for resolution in window_view_dict[aspect_ratio]:
+		var adjustedResolution = calculate_ratio_accurate_viewport(aspectRatioAsFraction, uiRatioAsFration, resolution)
+		newResolutionArray.append(adjustedResolution)
+
+	newAspectRatioDict[aspect_ratio].append_array(newResolutionArray)
+	return newAspectRatioDict
+
+func calculate_ratio_as_fraction(aspect_ratio_string):
 	var ratioArr = aspect_ratio_string.split(":")
 	if ratioArr[0] == null || ratioArr[1] == null:
 		push_error("invalid ratio given:" + aspect_ratio_string)
@@ -82,17 +103,13 @@ func calculate_aspect_ratio_as_fraction(aspect_ratio_string):
 
 
 
-func calculate_ratio_accurate_viewport(target_aspect_ratio, viewPort_size):
-	var aspect_ratio_fraction = calculate_aspect_ratio_as_fraction(target_aspect_ratio)
-	# 0.8 for 4/5 of screen space
-	var max_width = 0.8 * viewPort_size.x
-	var max_height = 0.8 * viewPort_size.y
+func calculate_ratio_accurate_viewport(aspect_ratio_as_fraction, uiRatioAsFration, viewPort_size):
+	var max_width = uiRatioAsFration * viewPort_size.x
+	var max_height = uiRatioAsFration * viewPort_size.y
 
-	var new_height = max_width / aspect_ratio_fraction
-	
-	var new_width = new_height * aspect_ratio_fraction
+	var new_height = max_width / aspect_ratio_as_fraction
 	
 	if new_height > max_height:
-		return Vector2(max_height * aspect_ratio_fraction, max_height)
+		return Vector2(max_height * aspect_ratio_as_fraction, max_height)
 	
 	return Vector2(max_width, new_height)
