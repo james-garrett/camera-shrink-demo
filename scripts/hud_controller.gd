@@ -2,13 +2,37 @@ extends Control
 
 @onready var hud = $HUD
 @onready var subViewport: SubViewport
-@onready var subViewportContainer: SubViewportContainer
 @onready var viewport: TextureRect
-
 @onready var subViewportDefaultSize
+
+# I think this value is going to modify a lot of the other UI zoom incrementors here
+# - We might need to set them based on this?
+@onready var defaultUIzoomSpeed = 5.0
+
+# probably scale this to be 1/4 the distance between each resolution indent 
+@onready var proximityToStickToResolution = 1000
+# Ideally make this number small enough that:
+	# The window will snap and the user will have time to realize it and let go (maybe look up average reaction times)
+	# If the user keeps scrolling then it won't feel laggy and stop/starty
+
+@onready var timeAfterResolutionSnapBeforeUserCanScrollAgain = 0.5
+
+@onready var timeForAccelerationToOccur = 0.3
+@onready var uiZoomAcceleration = 0
+@onready var uiZoomAccelerationIncrement = 1
+
+@onready var scroll_input_history_array_size = 5
+@onready var scroll_input_history = []
+@onready var scroll_clicks_before_snap_check = 3
+@onready var canZoom = false
+@onready var newScrollInput
+@onready var resolutionTrackerLabel: Label
+@onready var snapLog: Label
+
 var ui_expanded = true
 var target_size
 var resizing = false
+var snapping = false
 var uiWindowSizes = {
 	"16:9": [Vector2(1920, 1080), Vector2(1600, 900), Vector2(1366, 768), Vector2(1280, 720), Vector2(960, 540), Vector2(640, 360)]
 }
@@ -18,13 +42,14 @@ var defaultUItoGameWindowRatio = "4:5"
 var defaultWindowSize
 var uiWindowIndex = 0
 
+
 func _ready():
 	CustomLogger.log("hud_controller ready!")
 	viewport = get_tree().current_scene.find_child("TextureRect")
 	subViewport = get_tree().current_scene.find_child("SubViewport")
-	subViewportContainer  = get_tree().current_scene.find_child("SubViewportContainer")
 	subViewportDefaultSize = subViewport.size
-	
+	resolutionTrackerLabel = get_tree().current_scene.find_child("ResolutionTracker")
+	snapLog = get_tree().current_scene.find_child("SnapAndAccelerationLog")
 	viewport.anchor_left = 0
 	viewport.anchor_right = 0
 	viewport.anchor_top = 0
@@ -35,52 +60,127 @@ func _ready():
 	uiWindowSizesAfterUIratio = calibrateWindowSizesForAspectRatio(uiWindowSizes, defaultAspectRatio, defaultUItoGameWindowRatio)
 	
 	defaultWindowSize = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
+	snapLog.text = "Snapping: %s" % [snapping]
+	# var resolutionTrackLabelInitPosition = Vector2(viewport.get_global_rect().position.x, viewport.get_global_rect().position.y - (viewport.size.y /2) - 30)
+	# resolutionTrackerLabel.global_position = resolutionTrackLabelInitPosition
 
 	viewport.set_custom_minimum_size(defaultWindowSize)
+	resolutionTrackerLabel.text = "[%.2f,%.2f]" % [defaultWindowSize.x, defaultWindowSize.y]
 	viewport.stretch_mode = TextureRect.STRETCH_SCALE
-	
+	canZoom = true
 	await get_tree().process_frame
 	
+# This is a mess, refactor!
+func _process(delta):
+	snapLog.text = "Snapping: %s" % [snapping]
+	if resizing:
+		# resize_bottom_panel()
+		if scroll_input_history.size() >= 0:
+			resolutionTrackerLabel.text = "[%.2f,%.2f]" % [viewport.size.x, viewport.size.x]
+			# var closestResolutionAndDistance = Utils.get_closest_vector2_in_array(viewport.scale, uiWindowSizesAfterUIratio["16:9"])
+			if newScrollInput != null:
+				var newScrollItem = {"direction": newScrollInput, "delta": delta}
+				scroll_input_history = Utils.append_fixed_array(newScrollItem, scroll_input_history, scroll_input_history_array_size)
+				# if scroll_input_history.size() >= scroll_input_history_array_size:
+				# 	scroll_input_history.pop_back()
+				# scroll_input_history.push_front(newScrollItem)
+
+				newScrollInput = null
+				#if scroll_input_history.size() >= scroll_clicks_before_snap_check:					
+					#if closestResolutionAndDistance.distance <= proximityToStickToResolution:
+						#snap_to_resolution(delta, closestResolutionAndDistance.vector2)
+			else:
+				var lastInputTime = delta
+				if scroll_input_history.size() > 0:
+					lastInputTime = scroll_input_history.back().delta
+				var timeSinceLastInput = abs(delta - lastInputTime)
+				#if timeSinceLastInput > 0.4: 
+					#snap_to_resolution(delta, closestResolutionAndDistance.vector2)
+				
+				# get time since last scroll (from array)
+				# if time > threshold, snap to closest resolution
+				# - this should be fairly quick and responsive
+				# - this makes sure that the viewport isn't constantly moving and stops moving pretty quickly
+		if snapping:
+			set_new_viewport_size(delta, defaultUIzoomSpeed * 2)
+		else:
+			set_new_viewport_size(delta, defaultUIzoomSpeed)
+			
+		
+func snap_to_resolution(delta, target_resolution):
+	snapping = true
+	snapLog.text = "Snapping: %s" % [snapping]
+	# TODO - figure out way to pass timeElapsed to calculate_ui_zoom_acceleration_speed without recalculating it here 
+	var timeElasped = abs(scroll_input_history.back().delta - scroll_input_history.front().delta) 
+	var viewPortGapAcceleration = 0
+	if scroll_input_history.back().direction == Enums.cameraZoomDirections.ZOOM_IN:
+		viewPortGapAcceleration = (viewport.size / target_resolution)
+	else:
+		viewPortGapAcceleration = (target_resolution / viewport.size)
+	var zoomSpeedMultiplier = 1 - abs((defaultUIzoomSpeed - (10000*timeElasped)) * (1 - viewPortGapAcceleration.y))
+	var snapSpeed = calculate_ui_zoom_acceleration_speed(zoomSpeedMultiplier)
+	# get acceleration speed
+	target_size = target_resolution
+	
+	viewport.set_custom_minimum_size(target_size)
+	snapping = false
+	# set_new_viewport_size(delta, snapSpeed)
 
 func _input(event):
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+	if canZoom:
+		if event is InputEventMouseButton:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+				newScrollInput = Enums.cameraZoomDirections.ZOOM_IN
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+				newScrollInput = Enums.cameraZoomDirections.ZOOM_OUT
 			CustomLogger.log(str(event))
-			resize_ui_scroll(-1)
-			# resize_ui_menu(true)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-			CustomLogger.log(str(event))
-			resize_ui_scroll(1)
-			# resize_ui_menu(false)
+			resize_ui_scroll(newScrollInput)
+	
+# =============== Viewport Resizing =================
+func set_new_viewport_size(delta, snapSpeed):
+	var new_size = viewport.custom_minimum_size.lerp(target_size, snapSpeed * delta)
+	var distance = 0
+	if scroll_input_history[0].direction == Enums.cameraZoomDirections.ZOOM_IN:
+		distance = abs(new_size.y - target_size.y) 
+	else:
+		distance = abs(target_size.y - new_size.y)
+	if distance < 15:
+		resizing = false
+		# subViewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		snap_to_resolution(delta, target_size)
 
-func _process(delta):
-	if resizing:
-		var current_size = viewport.custom_minimum_size
-		var new_size = current_size.lerp(target_size, 5.0 * delta)
-		if new_size == target_size:
-			resizing = false
-		else:	
-			viewport.set_custom_minimum_size(new_size)
+		# viewport.set_custom_minimum_size(target_size)
+	else:	
+		viewport.set_custom_minimum_size(new_size)
 
 func resize_ui_scroll(direction):
-	if direction == 1:
+	if direction == Enums.cameraZoomDirections.ZOOM_OUT:
 		if uiWindowIndex > 0:
 			resizing = true
+			# subViewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 			uiWindowIndex -= 1
 			target_size = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
-	elif direction == -1:
+	elif direction == Enums.cameraZoomDirections.ZOOM_IN:
 		if uiWindowIndex < uiWindowSizesAfterUIratio[defaultAspectRatio].size() -1:
 			resizing = true
+			# subViewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 			uiWindowIndex += 1
 			target_size = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
 
 
-func calculate_ratio_as_fraction(aspect_ratio_string):
-	var ratioArr = aspect_ratio_string.split(":")
-	if ratioArr[0] == null || ratioArr[1] == null:
-		push_error("invalid ratio given:" + aspect_ratio_string)
-	var fraction = ratioArr[0].to_float() / ratioArr[1].to_float() 
-	return fraction
+# If: 
+	# the array is at its full size 
+	# time between the first and last input is
+
+	# Get the time between the first and the last 
+func calculate_ui_zoom_acceleration_speed(zoomMultiplier):
+	# get the time between the first and the last input
+	# If it's below a certain number, add the difference to the scroll speed?
+	var timeElasped = abs(scroll_input_history.back().delta - scroll_input_history.front().delta) 
+	var accelerationSpeed = defaultUIzoomSpeed
+	if timeElasped > defaultUIzoomSpeed:
+		accelerationSpeed = defaultUIzoomSpeed * zoomMultiplier
+	return accelerationSpeed
 
 
 func calculate_ratio_accurate_viewport(aspect_ratio_as_fraction, uiRatioAsFration, viewPort_size):
@@ -97,8 +197,8 @@ func calculate_ratio_accurate_viewport(aspect_ratio_as_fraction, uiRatioAsFratio
 
 # UI ratio is how much of the screen we want taken up by the UI
 func calibrateWindowSizesForAspectRatio(window_view_dict, aspect_ratio, uiRatio):
-	var uiRatioAsFration = calculate_ratio_as_fraction(uiRatio)
-	var aspectRatioAsFraction = calculate_ratio_as_fraction(aspect_ratio)
+	var uiRatioAsFration = Utils.calculate_ratio_as_fraction(uiRatio)
+	var aspectRatioAsFraction = Utils.calculate_ratio_as_fraction(aspect_ratio)
 	var newAspectRatioDict = {}
 	newAspectRatioDict[aspect_ratio] = []
 	var newResolutionArray = []
@@ -109,15 +209,51 @@ func calibrateWindowSizesForAspectRatio(window_view_dict, aspect_ratio, uiRatio)
 	newAspectRatioDict[aspect_ratio].append_array(newResolutionArray)
 	return newAspectRatioDict
 
+# ============== HUD Management =================
+func resize_bottom_panel():
+	#  move to global var
+	var bottom_panel = get_tree().current_scene.find_child("BottomPanel")
+	var windowDimensions = get_viewport().size
+	var spaceBetweenViewPortAndWindow = Vector2(windowDimensions.x - subViewport.size.x, windowDimensions.y - subViewport.size.y)
+	CustomLogger.log("Space between windows: %s,%s" % [spaceBetweenViewPortAndWindow.x, spaceBetweenViewPortAndWindow.y])
+	bottom_panel.size.y = spaceBetweenViewPortAndWindow.y
+	bottom_panel.global_position.y = windowDimensions.y - spaceBetweenViewPortAndWindow.y
+ #bottom_panel.global_position = Vector2(viewport.get_global_rect().position.x, viewport.get_global_rect().position.y - (viewport.size.y /2) - 30)
 
-# TODO - function which calculates window sizes after UI ratio changes
+# TODO 
+# - function which calculates window sizes after UI ratio changes
 	# - the UI ratio will change when the UI reaches set intervals, the UI will change size
 	# - Possible that we'll want to have the dict evolve to have the topmost layer be the UI ratio, then a list of aspect ratios, then resolutions
 	# -- {UI_ratio: {Aspect_ratio: [resolution_Array]}}
 	# -- I think this'd be for the best.
+# - FIX NAMING CONVERSATIONS, camelcase or underscore - PICK ONE (or figure out whether we name variables one way, func names another)
+# - Get functions we don't think will be re-used and put them into their parent, to reduce function spam
+# - Add function returnTypes and typedefs
+# - Upgrade to Godot 4.5 - it has a customized
+# - Resolution snap always targets smallest resolution
+# -- Should target next resolution that's the closest in the direction that we're heading
+# -- The direction part is the issue!
+# --- Ok no it's part of the issue but we shouldn't still be shrinking to the lowest resolution but the closest, SOLVE THAT FIRST
+	
 	
 	
 # PERFORMANCE Considerations
 # - Lerp interval can be faster
 # - Moving between resolutions on such small intervals is causing slowdown
 # - Can we lower render resolution after it reaches certain intervals?
+
+
+# BLACK HOLE DISSASOCIATIVE EFFECT
+# - What you see outside the borders of the ui
+# - Disappears as more and more UI is taken up 
+# - A composite of data moshing, swirling black hole
+# - Have a glow around the edges of the UI
+# --https://www.esa.int/var/esa/storage/images/esa_multimedia/images/2022/04/black_hole_artist_s_impression/24046562-1-eng-GB/Black_hole_artist_s_impression_pillars.jpg
+# --Some examples of space shaders I like:
+	# https://duckduckgo.com/?t=ffab&q=generative+space+art+shader+godot&ia=images&iax=images
+	# https://duckduckgo.com/?t=ffab&q=generative+space+art+shader+godot&ia=images&iax=images&iai=http%3A%2F%2Fgodotshaders.com%2Fwp-content%2Fuploads%2F2025%2F06%2Fimage_2025-06-03_195721838.jpg
+	# This search: https://duckduckgo.com/?t=ffab&q=generative+space+art+shader+godot&ia=images&iax=images
+# --https://fineartamerica.com/featured/dissociation-jornum-munroj.html
+# --https://www.youtube.com/watch?v=v-l0pmPnwp4
+# --https://duckduckgo.com/?t=ffab&q=90s+digital+space+art&ia=images&iax=images&iai=https%3A%2F%2Fd2jv9003bew7ag.cloudfront.net%2Fuploads%2FAndy-Warhol-Campbells-Image-via-computerhistoryorg.jpg
+# --https://github.com/txnsor/godot-datamosher

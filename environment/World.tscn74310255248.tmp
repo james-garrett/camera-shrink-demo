@@ -1,6 +1,6 @@
-[gd_scene load_steps=21 format=3 uid="uid://dk02rm1jcir6t"]
+[gd_scene load_steps=20 format=3 uid="uid://dk02rm1jcir6t"]
 
-[ext_resource type="Script" uid="uid://c2kdixaoxfov6" path="res://scripts/FPSCounter.gd" id="1"]
+[ext_resource type="Script" uid="uid://c2kdixaoxfov6" path="res://FPSCounter.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://bsguup0m8xqxp" path="res://player/Player.tscn" id="3"]
 [ext_resource type="PackedScene" uid="uid://c7isdpd8ykjep" path="res://environment/Wall.tscn" id="4"]
 [ext_resource type="PackedScene" uid="uid://cnhrhyfu1hs1t" path="res://environment/box.tscn" id="4_nrt7m"]
@@ -14,7 +14,14 @@
 [ext_resource type="Script" uid="uid://noy65fkwbmt5" path="res://scripts/basic_logger.gd" id="11_uqj48"]
 [ext_resource type="Script" uid="uid://vutw1j8fapgv" path="res://scripts/texture_rect_game_display.gd" id="13_dedhk"]
 [ext_resource type="Shader" uid="uid://bwm4c1v2fpoch" path="res://shaders/ghosting.gdshader" id="13_ly81q"]
-[ext_resource type="Script" path="res://scripts/window_size.gd" id="14_5dpq7"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uqj48"]
+bg_color = Color(0.329158, 0.329158, 0.329158, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.497474, 0.497474, 0.497473, 1)
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_y252g"]
 
@@ -29,14 +36,6 @@ ssao_intensity = 4.0
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5dpq7"]
 shader = ExtResource("13_ly81q")
 shader_parameter/fade_amount = 0.1
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uqj48"]
-bg_color = Color(0.329158, 0.329158, 0.329158, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.497474, 0.497474, 0.497473, 1)
 
 [node name="MainScene" type="Node3D"]
 
@@ -78,38 +77,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.47623, 0, -2.78186)
 [node name="Wall" parent="." instance=ExtResource("4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.665272, -8.1876)
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("7")
-
-[node name="Sun" type="DirectionalLight3D" parent="WorldEnvironment"]
-transform = Transform3D(-0.5, -0.296198, 0.813798, 0, 0.939693, 0.34202, -0.866025, 0.17101, -0.469847, 0, 0, 0)
-layers = 262144
-light_color = Color(0.94902, 0.580392, 0.247059, 1)
-light_cull_mask = 4294443007
-shadow_enabled = true
-
-[node name="Player" parent="." instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
-
-[node name="ColorRect" type="ColorRect" parent="."]
-visible = false
-texture_filter = 2
-material = SubResource("ShaderMaterial_5dpq7")
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
 [node name="UI" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
-offset_left = 940.0
-offset_top = 511.0
-offset_right = 980.0
-offset_bottom = 511.0
+offset_right = 40.0
+offset_bottom = 40.0
 script = ExtResource("6_uqj48")
 
 [node name="HUD" type="CanvasLayer" parent="UI"]
@@ -118,13 +90,25 @@ script = ExtResource("6_uqj48")
 offset_right = 40.0
 offset_bottom = 23.0
 
+[node name="FPSCounter" type="Label" parent="UI/HUD"]
+offset_right = 45.0
+offset_bottom = 23.0
+text = "FPS: 0"
+script = ExtResource("1")
+
+[node name="Help" type="Label" parent="UI/HUD"]
+offset_top = 20.0
+offset_right = 107.0
+offset_bottom = 69.0
+text = "E = Flashlight
+WASD = Move"
+
 [node name="BottomPanel" type="PanelContainer" parent="UI/HUD"]
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -151.0
-offset_bottom = -1.0
+offset_top = -200.0
 grow_horizontal = 2
 grow_vertical = 0
 theme = ExtResource("7_jweps")
@@ -402,98 +386,30 @@ theme = ExtResource("7_jweps")
 text = "Minimap"
 horizontal_alignment = 1
 
-[node name="TopPanel" type="PanelContainer" parent="UI/HUD"]
-anchors_preset = 10
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("7")
+
+[node name="Sun" type="DirectionalLight3D" parent="WorldEnvironment"]
+transform = Transform3D(-0.5, -0.296198, 0.813798, 0, 0.939693, 0.34202, -0.866025, 0.17101, -0.469847, 0, 0, 0)
+layers = 262144
+light_color = Color(0.94902, 0.580392, 0.247059, 1)
+light_cull_mask = 4294443007
+shadow_enabled = true
+
+[node name="Player" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+
+[node name="ColorRect" type="ColorRect" parent="."]
+visible = false
+texture_filter = 2
+material = SubResource("ShaderMaterial_5dpq7")
+anchors_preset = 15
 anchor_right = 1.0
-offset_bottom = 97.0
+anchor_bottom = 1.0
 grow_horizontal = 2
-theme = ExtResource("7_jweps")
-
-[node name="InterfaceContainer" type="HBoxContainer" parent="UI/HUD/TopPanel"]
-layout_mode = 2
-theme = ExtResource("7_jweps")
-
-[node name="Help" type="VBoxContainer" parent="UI/HUD/TopPanel/InterfaceContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme = ExtResource("7_jweps")
-
-[node name="MarginContainer" type="MarginContainer" parent="UI/HUD/TopPanel/InterfaceContainer/Help"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/margin_left = 10
-
-[node name="Help" type="Label" parent="UI/HUD/TopPanel/InterfaceContainer/Help/MarginContainer"]
-layout_mode = 2
-text = "E = Flashlight
-WASD = Move"
-
-[node name="FPS" type="VBoxContainer" parent="UI/HUD/TopPanel/InterfaceContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme = ExtResource("7_jweps")
-
-[node name="MarginContainer" type="MarginContainer" parent="UI/HUD/TopPanel/InterfaceContainer/FPS"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/margin_left = 10
-
-[node name="FPSCounter" type="Label" parent="UI/HUD/TopPanel/InterfaceContainer/FPS/MarginContainer"]
-layout_mode = 2
-text = "FPS: 0"
-script = ExtResource("1")
-
-[node name="WindowSize" type="VBoxContainer" parent="UI/HUD/TopPanel/InterfaceContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme = ExtResource("7_jweps")
-
-[node name="WindowLabel" type="Label" parent="UI/HUD/TopPanel/InterfaceContainer/WindowSize"]
-layout_mode = 2
-text = "Window"
-horizontal_alignment = 1
-
-[node name="CenterContainer" type="CenterContainer" parent="UI/HUD/TopPanel/InterfaceContainer/WindowSize"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="WindowSize" type="Label" parent="UI/HUD/TopPanel/InterfaceContainer/WindowSize/CenterContainer"]
-layout_mode = 2
-horizontal_alignment = 1
-script = ExtResource("14_5dpq7")
-
-[node name="LeftPanel" type="PanelContainer" parent="UI/HUD"]
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_top = -443.025
-offset_right = 117.0
-offset_bottom = 388.155
 grow_vertical = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
-theme = ExtResource("7_jweps")
-
-[node name="InterfaceContainer" type="HBoxContainer" parent="UI/HUD/LeftPanel"]
-layout_mode = 2
-theme = ExtResource("7_jweps")
-
-[node name="RightPanel" type="PanelContainer" parent="UI/HUD"]
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -117.0
-offset_top = -443.025
-offset_bottom = 388.155
-grow_horizontal = 0
-grow_vertical = 2
-size_flags_vertical = 3
-theme = ExtResource("7_jweps")
-
-[node name="InterfaceContainer" type="HBoxContainer" parent="UI/HUD/RightPanel"]
-layout_mode = 2
-theme = ExtResource("7_jweps")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 anchors_preset = 8
@@ -508,13 +424,6 @@ offset_bottom = 20.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="SnapAndAccelerationLog" type="Label" parent="VBoxContainer"]
-layout_mode = 2
-horizontal_alignment = 1
-
-[node name="ResolutionTracker" type="Label" parent="VBoxContainer"]
-layout_mode = 2
-
 [node name="CenterContainer" type="CenterContainer" parent="VBoxContainer"]
 layout_mode = 2
 
@@ -523,3 +432,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("13_dedhk")
+
+[node name="ResolutionTracker" type="Label" parent="VBoxContainer/CenterContainer"]
+layout_mode = 2

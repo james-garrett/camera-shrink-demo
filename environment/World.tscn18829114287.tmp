@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://bhw2o0powjnsp" path="res://environment/Floor.tscn" id="5"]
 [ext_resource type="PackedScene" uid="uid://dl8xj04oxmnsb" path="res://environment/Ball.tscn" id="6"]
 [ext_resource type="Script" uid="uid://xvovvw1qg35r" path="res://scripts/hud_controller.gd" id="6_uqj48"]
+[ext_resource type="Script" path="res://environment/window_size.gd" id="7_5dpq7"]
 [ext_resource type="Texture2D" uid="uid://1h5eusw70pvo" path="res://tiny_texture.png" id="7_6mupk"]
 [ext_resource type="Theme" uid="uid://d3xpj2jcaq3xd" path="res://Assets/Themes/godot-theme-browser-main-project-themes/project/themes/purpixeled/theme.tres" id="7_jweps"]
 [ext_resource type="Texture2D" uid="uid://cjtoykghduonl" path="res://yellow_tiny_texture.png" id="8_6mupk"]
@@ -14,7 +15,6 @@
 [ext_resource type="Script" uid="uid://noy65fkwbmt5" path="res://scripts/basic_logger.gd" id="11_uqj48"]
 [ext_resource type="Script" uid="uid://vutw1j8fapgv" path="res://scripts/texture_rect_game_display.gd" id="13_dedhk"]
 [ext_resource type="Shader" uid="uid://bwm4c1v2fpoch" path="res://shaders/ghosting.gdshader" id="13_ly81q"]
-[ext_resource type="Script" path="res://scripts/window_size.gd" id="14_5dpq7"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_y252g"]
 
@@ -460,7 +460,7 @@ size_flags_vertical = 3
 [node name="WindowSize" type="Label" parent="UI/HUD/TopPanel/InterfaceContainer/WindowSize/CenterContainer"]
 layout_mode = 2
 horizontal_alignment = 1
-script = ExtResource("14_5dpq7")
+script = ExtResource("7_5dpq7")
 
 [node name="LeftPanel" type="PanelContainer" parent="UI/HUD"]
 anchors_preset = 4

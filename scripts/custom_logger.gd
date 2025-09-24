@@ -1,3 +1,5 @@
+# TODO - replace this with 4.5 custom logger if it makes it redundant
+
 extends Node
 
 signal new_log(logMessage)

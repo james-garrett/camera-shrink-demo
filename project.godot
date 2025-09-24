@@ -18,6 +18,8 @@ config/icon="res://icon.png"
 [autoload]
 
 CustomLogger="*res://scripts/custom_logger.gd"
+Utils="*res://scripts/utils.gd"
+Enums="*res://scripts/enums.gd"
 
 [display]
 
