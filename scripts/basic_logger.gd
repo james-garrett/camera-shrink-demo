@@ -5,11 +5,11 @@ func _ready():
 	CustomLogger.connect("new_log", Callable(self, "_on_logger_new_log"))
 
 func _on_logger_new_log(logMessage):
-	print("emission received")
+	# print("emission received")
 	emit_new_log(logMessage)
 	
 func append_log(text):
-	print("appending text")
+	# print("appending text")
 	self.text += "\n" + text
 	# self.text = "test"
 	

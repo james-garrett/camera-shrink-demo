@@ -1,5 +1,8 @@
 extends Control
 
+signal UI_RESOLUTION_CHANGE(Vector2)
+signal ON_RESOLUTION_ARRAY_SET(Array)
+
 @onready var hud = $HUD
 @onready var subViewport: SubViewport
 @onready var viewport: TextureRect
@@ -60,9 +63,8 @@ func _ready():
 	uiWindowSizesAfterUIratio = calibrateWindowSizesForAspectRatio(uiWindowSizes, defaultAspectRatio, defaultUItoGameWindowRatio)
 	
 	defaultWindowSize = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
+	ON_RESOLUTION_ARRAY_SET.emit(uiWindowSizesAfterUIratio[defaultAspectRatio])
 	snapLog.text = "Snapping: %s" % [snapping]
-	# var resolutionTrackLabelInitPosition = Vector2(viewport.get_global_rect().position.x, viewport.get_global_rect().position.y - (viewport.size.y /2) - 30)
-	# resolutionTrackerLabel.global_position = resolutionTrackLabelInitPosition
 
 	viewport.set_custom_minimum_size(defaultWindowSize)
 	resolutionTrackerLabel.text = "[%.2f,%.2f]" % [defaultWindowSize.x, defaultWindowSize.y]
@@ -77,18 +79,10 @@ func _process(delta):
 		# resize_bottom_panel()
 		if scroll_input_history.size() >= 0:
 			resolutionTrackerLabel.text = "[%.2f,%.2f]" % [viewport.size.x, viewport.size.x]
-			# var closestResolutionAndDistance = Utils.get_closest_vector2_in_array(viewport.scale, uiWindowSizesAfterUIratio["16:9"])
 			if newScrollInput != null:
 				var newScrollItem = {"direction": newScrollInput, "delta": delta}
 				scroll_input_history = Utils.append_fixed_array(newScrollItem, scroll_input_history, scroll_input_history_array_size)
-				# if scroll_input_history.size() >= scroll_input_history_array_size:
-				# 	scroll_input_history.pop_back()
-				# scroll_input_history.push_front(newScrollItem)
-
 				newScrollInput = null
-				#if scroll_input_history.size() >= scroll_clicks_before_snap_check:					
-					#if closestResolutionAndDistance.distance <= proximityToStickToResolution:
-						#snap_to_resolution(delta, closestResolutionAndDistance.vector2)
 			else:
 				var lastInputTime = delta
 				if scroll_input_history.size() > 0:
@@ -119,12 +113,12 @@ func snap_to_resolution(delta, target_resolution):
 		viewPortGapAcceleration = (target_resolution / viewport.size)
 	var zoomSpeedMultiplier = 1 - abs((defaultUIzoomSpeed - (10000*timeElasped)) * (1 - viewPortGapAcceleration.y))
 	var snapSpeed = calculate_ui_zoom_acceleration_speed(zoomSpeedMultiplier)
-	# get acceleration speed
+
 	target_size = target_resolution
 	
 	viewport.set_custom_minimum_size(target_size)
+	UI_RESOLUTION_CHANGE.emit(target_size)
 	snapping = false
-	# set_new_viewport_size(delta, snapSpeed)
 
 func _input(event):
 	if canZoom:
@@ -148,22 +142,20 @@ func set_new_viewport_size(delta, snapSpeed):
 		resizing = false
 		# subViewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 		snap_to_resolution(delta, target_size)
-
-		# viewport.set_custom_minimum_size(target_size)
 	else:	
 		viewport.set_custom_minimum_size(new_size)
+		UI_RESOLUTION_CHANGE.emit(new_size)
+	# TODO - put all set_custom_minimum_size calls in one function so we can also emit in one place
 
 func resize_ui_scroll(direction):
 	if direction == Enums.cameraZoomDirections.ZOOM_OUT:
 		if uiWindowIndex > 0:
 			resizing = true
-			# subViewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 			uiWindowIndex -= 1
 			target_size = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
 	elif direction == Enums.cameraZoomDirections.ZOOM_IN:
 		if uiWindowIndex < uiWindowSizesAfterUIratio[defaultAspectRatio].size() -1:
 			resizing = true
-			# subViewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 			uiWindowIndex += 1
 			target_size = uiWindowSizesAfterUIratio[defaultAspectRatio][uiWindowIndex]
 
@@ -234,7 +226,8 @@ func resize_bottom_panel():
 # -- Should target next resolution that's the closest in the direction that we're heading
 # -- The direction part is the issue!
 # --- Ok no it's part of the issue but we shouldn't still be shrinking to the lowest resolution but the closest, SOLVE THAT FIRST
-	
+# - Scrolling needs to consider touchpads (ugh)
+# - https://www.youtube.com/watch?v=rGgxRsaGdcA
 	
 	
 # PERFORMANCE Considerations
