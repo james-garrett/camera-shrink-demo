@@ -32,6 +32,9 @@ signal ON_RESOLUTION_ARRAY_SET(Array)
 @onready var resolutionTrackerLabel: Label
 @onready var snapLog: Label
 
+var current_resolution_value = Vector2(0,0)
+var change_in_resolution_value = 0
+
 var ui_expanded = true
 var target_size
 var resizing = false
@@ -51,6 +54,7 @@ func _ready():
 	viewport = get_tree().current_scene.find_child("TextureRect")
 	subViewport = get_tree().current_scene.find_child("SubViewport")
 	subViewportDefaultSize = subViewport.size
+	current_resolution_value = subViewportDefaultSize
 	resolutionTrackerLabel = get_tree().current_scene.find_child("ResolutionTracker")
 	snapLog = get_tree().current_scene.find_child("SnapAndAccelerationLog")
 	viewport.anchor_left = 0
@@ -76,7 +80,6 @@ func _ready():
 func _process(delta):
 	snapLog.text = "Snapping: %s" % [snapping]
 	if resizing:
-		# resize_bottom_panel()
 		if scroll_input_history.size() >= 0:
 			resolutionTrackerLabel.text = "[%.2f,%.2f]" % [viewport.size.x, viewport.size.x]
 			if newScrollInput != null:
@@ -116,9 +119,15 @@ func snap_to_resolution(delta, target_resolution):
 
 	target_size = target_resolution
 	
-	viewport.set_custom_minimum_size(target_size)
-	UI_RESOLUTION_CHANGE.emit(target_size)
+	
 	snapping = false
+
+func update_resolution(target_size):
+	viewport.set_custom_minimum_size(target_size)
+	change_in_resolution_value = current_resolution_value.y -target_size.y
+	current_resolution_value = target_size
+	UI_RESOLUTION_CHANGE.emit(target_size)
+	resize_bottom_panel(abs(change_in_resolution_value))
 
 func _input(event):
 	if canZoom:
@@ -127,7 +136,7 @@ func _input(event):
 				newScrollInput = Enums.cameraZoomDirections.ZOOM_IN
 			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 				newScrollInput = Enums.cameraZoomDirections.ZOOM_OUT
-			CustomLogger.log(str(event))
+			# CustomLogger.log(str(event))
 			resize_ui_scroll(newScrollInput)
 	
 # =============== Viewport Resizing =================
@@ -143,8 +152,9 @@ func set_new_viewport_size(delta, snapSpeed):
 		# subViewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 		snap_to_resolution(delta, target_size)
 	else:	
-		viewport.set_custom_minimum_size(new_size)
-		UI_RESOLUTION_CHANGE.emit(new_size)
+		update_resolution(new_size)
+		# viewport.set_custom_minimum_size(new_size)
+		# UI_RESOLUTION_CHANGE.emit(new_size)
 	# TODO - put all set_custom_minimum_size calls in one function so we can also emit in one place
 
 func resize_ui_scroll(direction):
@@ -202,15 +212,19 @@ func calibrateWindowSizesForAspectRatio(window_view_dict, aspect_ratio, uiRatio)
 	return newAspectRatioDict
 
 # ============== HUD Management =================
-func resize_bottom_panel():
+func resize_bottom_panel(ySpaceResized):
 	#  move to global var
 	var bottom_panel = get_tree().current_scene.find_child("BottomPanel")
 	var windowDimensions = get_viewport().size
-	var spaceBetweenViewPortAndWindow = Vector2(windowDimensions.x - subViewport.size.x, windowDimensions.y - subViewport.size.y)
-	CustomLogger.log("Space between windows: %s,%s" % [spaceBetweenViewPortAndWindow.x, spaceBetweenViewPortAndWindow.y])
-	bottom_panel.size.y = spaceBetweenViewPortAndWindow.y
-	bottom_panel.global_position.y = windowDimensions.y - spaceBetweenViewPortAndWindow.y
- #bottom_panel.global_position = Vector2(viewport.get_global_rect().position.x, viewport.get_global_rect().position.y - (viewport.size.y /2) - 30)
+	# var spaceBetweenViewPortAndWindow = Vector2(windowDimensions.x - viewport.size.x, windowDimensions.y - viewport.size.y)
+	# CustomLogger.log("Space between windows: %s,%s" % [spaceBetweenViewPortAndWindow.x, spaceBetweenViewPortAndWindow.y])
+	# bottom_panel.size.y = spaceBetweenViewPortAndWindow.y
+	var lastInputTime = scroll_input_history.front()
+	if (lastInputTime):
+		if (lastInputTime.direction == Enums.cameraZoomDirections.ZOOM_IN):
+			bottom_panel.position.y = (bottom_panel.position.y - (ySpaceResized /2))
+		elif (lastInputTime.direction == Enums.cameraZoomDirections.ZOOM_OUT):
+			bottom_panel.position.y = (bottom_panel.position.y + (ySpaceResized /2))
 
 # TODO 
 # - function which calculates window sizes after UI ratio changes
