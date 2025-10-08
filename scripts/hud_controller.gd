@@ -7,13 +7,14 @@ signal ON_RESOLUTION_ARRAY_SET(Array)
 @onready var subViewport: SubViewport
 @onready var viewport: TextureRect
 @onready var subViewportDefaultSize
+@onready var bottom_panel: PanelContainer
 
 # I think this value is going to modify a lot of the other UI zoom incrementors here
 # - We might need to set them based on this?
 @onready var defaultUIzoomSpeed = 5.0
 
 # probably scale this to be 1/4 the distance between each resolution indent 
-@onready var proximityToStickToResolution = 1000
+@onready var proximityToStickToResolution = 50
 # Ideally make this number small enough that:
 	# The window will snap and the user will have time to realize it and let go (maybe look up average reaction times)
 	# If the user keeps scrolling then it won't feel laggy and stop/starty
@@ -32,6 +33,9 @@ signal ON_RESOLUTION_ARRAY_SET(Array)
 @onready var resolutionTrackerLabel: Label
 @onready var snapLog: Label
 
+@onready var debugDrawer
+@onready var drawer
+
 var current_resolution_value = Vector2(0,0)
 var change_in_resolution_value = 0
 
@@ -47,6 +51,7 @@ var defaultAspectRatio = "16:9"
 var defaultUItoGameWindowRatio = "4:5"
 var defaultWindowSize
 var uiWindowIndex = 0
+var frameCounter = 4
 
 
 func _ready():
@@ -74,11 +79,39 @@ func _ready():
 	resolutionTrackerLabel.text = "[%.2f,%.2f]" % [defaultWindowSize.x, defaultWindowSize.y]
 	viewport.stretch_mode = TextureRect.STRETCH_SCALE
 	canZoom = true
+	# setupDebugDrawer()
+	# get_edge_of_viewport()
+
 	await get_tree().process_frame
 	
+func setupDebugDrawer():
+	# debugDrawer = preload("res://addons/debugdraw2d/DebugDraw2D.gd")
+	# drawer = debugDrawer.new()
+	
+	# subViewport.add_child(subViewport)
+	# drawer.position = Vector2(0,0)
+	
+	DebugDraw3D.scoped_config().set_viewport(subViewport) 	 
+	# DebugDraw3D.draw_box(Vector3(screen_center.x, screen_center.y, 0), Quaternion.IDENTITY,Vector3.ONE, Color.PINK)
+	# drawer.rect(Vector2(0, 0))
+	# drawer.rect(screen_center - Vector2(100, -100), Vector2(50, 25), Color(1, 1, 1))
+	# DebugDraw2D.rect(Vector2(0,0))
+	# get_edge_of_viewport() 
+
+# func get_edge_of_viewport():
+	# DebugDraw2D.rect(viewport.position, viewport.size)
+
 # This is a mess, refactor!
 func _process(delta):
-	snapLog.text = "Snapping: %s" % [snapping]
+	var screen_center = subViewport.size / 2.0
+	# if drawer:
+	# 	drawer.rect(screen_center)
+	DebugDraw3D.draw_box(Vector3(screen_center.x, screen_center.y, 0), Quaternion.IDENTITY,Vector3.ONE, Color.PINK)
+	DebugDraw3D.draw_box(Vector3(10, 10, 10), Quaternion.IDENTITY,Vector3.ONE, Color.PINK)
+	DebugDraw3D.draw_box(Vector3(0, 0, 0), Quaternion.IDENTITY,Vector3(1,2,1), Color.PINK)
+	
+	# DebugDraw2D.rect(Vector2(50,50), Vector2(50, 25), Color(1, 1, 1), 1, 1)
+	# snapLog.text = "Snapping: %s" % [snapping]
 	if resizing:
 		if scroll_input_history.size() >= 0:
 			resolutionTrackerLabel.text = "[%.2f,%.2f]" % [viewport.size.x, viewport.size.x]
@@ -86,22 +119,17 @@ func _process(delta):
 				var newScrollItem = {"direction": newScrollInput, "delta": delta}
 				scroll_input_history = Utils.append_fixed_array(newScrollItem, scroll_input_history, scroll_input_history_array_size)
 				newScrollInput = null
-			else:
-				var lastInputTime = delta
-				if scroll_input_history.size() > 0:
-					lastInputTime = scroll_input_history.back().delta
-				var timeSinceLastInput = abs(delta - lastInputTime)
-				#if timeSinceLastInput > 0.4: 
-					#snap_to_resolution(delta, closestResolutionAndDistance.vector2)
-				
-				# get time since last scroll (from array)
-				# if time > threshold, snap to closest resolution
-				# - this should be fairly quick and responsive
-				# - this makes sure that the viewport isn't constantly moving and stops moving pretty quickly
-		if snapping:
-			set_new_viewport_size(delta, defaultUIzoomSpeed * 2)
-		else:
-			set_new_viewport_size(delta, defaultUIzoomSpeed)
+#			I assume this condition here is if we're resizing but not scrollin - i.e snapping/lerping/locking to a resolution
+			# else:
+			# 	var lastInputTime = delta
+			# 	if scroll_input_history.size() > 0:
+			# 		lastInputTime = scroll_input_history.back().delta
+			# 	var timeSinceLastInput = abs(delta - lastInputTime)
+		frameCounter += 1
+		var rerenderViewport = frameCounter % 2000 == 0
+		if rerenderViewport:
+			frameCounter = 0
+		set_new_viewport_size(delta, defaultUIzoomSpeed, rerenderViewport)
 			
 		
 func snap_to_resolution(delta, target_resolution):
@@ -119,15 +147,15 @@ func snap_to_resolution(delta, target_resolution):
 
 	target_size = target_resolution
 	
-	
 	snapping = false
 
-func update_resolution(target_size):
+func update_resolution(target_size, rerenderViewport):
 	viewport.set_custom_minimum_size(target_size)
 	change_in_resolution_value = current_resolution_value.y -target_size.y
 	current_resolution_value = target_size
-	UI_RESOLUTION_CHANGE.emit(target_size)
-	resize_bottom_panel(abs(change_in_resolution_value))
+	if rerenderViewport:
+		UI_RESOLUTION_CHANGE.emit(target_size)
+	# resize_bottom_panel(abs(change_in_resolution_value))
 
 func _input(event):
 	if canZoom:
@@ -140,22 +168,26 @@ func _input(event):
 			resize_ui_scroll(newScrollInput)
 	
 # =============== Viewport Resizing =================
-func set_new_viewport_size(delta, snapSpeed):
+func set_new_viewport_size(delta, snapSpeed, rerenderViewport):
 	var new_size = viewport.custom_minimum_size.lerp(target_size, snapSpeed * delta)
 	var distance = 0
 	if scroll_input_history[0].direction == Enums.cameraZoomDirections.ZOOM_IN:
 		distance = abs(new_size.y - target_size.y) 
 	else:
 		distance = abs(target_size.y - new_size.y)
-	if distance < 15:
-		resizing = false
+	# if distance < 15:
+		#resizing = false
 		# subViewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-		snap_to_resolution(delta, target_size)
-	else:	
-		update_resolution(new_size)
+		# snap_to_resolution(delta, target_size)
+	# else:	
+		# update_resolution(new_size)
 		# viewport.set_custom_minimum_size(new_size)
 		# UI_RESOLUTION_CHANGE.emit(new_size)
 	# TODO - put all set_custom_minimum_size calls in one function so we can also emit in one place
+	
+	change_in_resolution_value = viewport.custom_minimum_size.y -new_size.y
+	resize_bottom_panel(abs(change_in_resolution_value))
+	update_resolution(new_size, rerenderViewport)
 
 func resize_ui_scroll(direction):
 	if direction == Enums.cameraZoomDirections.ZOOM_OUT:
@@ -223,8 +255,10 @@ func resize_bottom_panel(ySpaceResized):
 	if (lastInputTime):
 		if (lastInputTime.direction == Enums.cameraZoomDirections.ZOOM_IN):
 			bottom_panel.position.y = (bottom_panel.position.y - (ySpaceResized /2))
+			# bottom_panel.position.y = (subViewport.size.y - bottom_panel.size.y)
 		elif (lastInputTime.direction == Enums.cameraZoomDirections.ZOOM_OUT):
 			bottom_panel.position.y = (bottom_panel.position.y + (ySpaceResized /2))
+			# bottom_panel.position.y = (subViewport.size.y - bottom_panel.size.y)
 
 # TODO 
 # - function which calculates window sizes after UI ratio changes

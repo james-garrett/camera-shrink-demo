@@ -21,6 +21,10 @@ CustomLogger="*res://scripts/custom_logger.gd"
 Utils="*res://scripts/utils.gd"
 Enums="*res://scripts/enums.gd"
 
+[debug_draw_3d]
+
+settings/addon_root_folder="res://addons/debug_draw_3d"
+
 [display]
 
 window/size/viewport_width=1920
