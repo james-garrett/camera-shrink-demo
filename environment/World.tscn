@@ -481,6 +481,7 @@ layout_mode = 2
 theme = ExtResource("7_jweps")
 
 [node name="RightPanel" type="PanelContainer" parent="UI/HUD"]
+visible = false
 anchors_preset = 6
 anchor_left = 1.0
 anchor_top = 0.5
@@ -551,7 +552,7 @@ text = "[0,0]"
 vertical_alignment = 1
 script = ExtResource("18_yfed2")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="DisplayWindow" type="VBoxContainer" parent="."]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -564,18 +565,19 @@ offset_bottom = 20.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="SnapAndAccelerationLog" type="Label" parent="VBoxContainer"]
+[node name="SnapAndAccelerationLog" type="Label" parent="DisplayWindow"]
 visible = false
 layout_mode = 2
 horizontal_alignment = 1
 
-[node name="ResolutionTracker" type="Label" parent="VBoxContainer"]
+[node name="ResolutionTracker" type="Label" parent="DisplayWindow"]
+visible = false
 layout_mode = 2
 
-[node name="CenterContainer" type="CenterContainer" parent="VBoxContainer"]
+[node name="CenterContainer" type="CenterContainer" parent="DisplayWindow"]
 layout_mode = 2
 
-[node name="TextureRect" type="TextureRect" parent="VBoxContainer/CenterContainer"]
+[node name="TextureRect" type="TextureRect" parent="DisplayWindow/CenterContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
